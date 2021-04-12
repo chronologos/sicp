@@ -36,7 +36,7 @@
         (recur (improve guess x) x))))
 
 (comment
-  (sqrt-iter 1 4)
+  (sqrt-iter 1 4.0)
   (sqrt-iter 10 92400000000000000))
 ;; >>: arithmetic exception
 (sqrt-iter 1 0.0005)
@@ -246,12 +246,105 @@
 ;; AH! The key idea here is to keep as much state variables as we have recursive calls, and use them as a queue, with the first presenting the most recent computation, and so on:
 
 (defn fibonacci* [n]
-  (letfn [(fib-iter [a b count] 
-                    (if (zero? count) b
-                        (recur (+ a b) a (dec count))))]
+  (letfn [(fib-iter [a b count]
+            (if (zero? count) b
+                (recur (+ a b) a (dec count))))]
     (fib-iter 1 0 n)))
 
 (time (fibonacci 30))
 (time (fibonacci* 30)) ;; fastest of all, 0.147 msecs (loop doesn't change runtime)
 
+;; Exercise 1.11.  A function f is defined by the rule that f(n) = n if n<3 and f(n) = f(n - 1) + 2f(n - 2) + 3f(n - 3) if n> 3. Write a procedure that computes f by means of a recursive process. Write a procedure that computes f by means of an iterative process.
+(defn ex111-r [n]
+  (cond (< n 3) n
+        (>= n 3) (+ (ex111-r (- n 1))
+                    (* 2 (ex111-r (- n 2)))
+                    (* 3 (ex111-r (- n 3))))
+        :else (throw (new AssertionError "invalid n"))))
+
+(ex111-r 10)
+
+(defn ex111-i [n]
+  (let [iter (fn [a b c count]
+               (if (zero? count) c
+                   (recur b c (+ (* 3 a) (* 2 b) c) (dec count))))]
+    (iter 0 1 2 (- n 2))))
+
+(ex111-i 10)
+
+;; Exercise 1.12. Write a procedure that computes elements of Pascal's triangle by means of a recursive process.
+(defn pascal [n]
+  (let [pp (fn [i prev]
+             (cond (< n 0) (throw (new AssertionError "invalid n"))
+                   (= n 1) [1]
+                   (= n 2) [1 1]
+                   (= i n) prev
+                   :else (let [pairs (partition 2 1 prev)
+                               new-inner (map #(apply + %) pairs)]
+                           (recur (inc i) (concat [1] new-inner [1])))))]
+    (pp 1 [])))
+
+(assert (= (pascal 5) [1 4 6 4 1]))
+
+;; Exercise 1.16  Design a procedure that evolves an iterative exponentiation process that uses successive squaring and uses a logarithmic number of steps, as does fast-expt.
+
+(defn fast-expt [b n]
+  (cond (zero? n) 1
+        (even? n) (* (fast-expt b (/ n 2)) (fast-expt b (/ n 2)))
+        :else (* b (fast-expt b (- n 1)))))
+(fast-expt 2 5)
+
+(defn fast-expt-iter [b n]
+  ;; a﹒b^n is invariant
+  (let [f (fn [b n a]
+            (cond
+              (= n 0) a
+              (even? n) (recur (* b b) (/ n 2) a)
+              :else (recur b (dec n) (* b a))))]
+    (f b n 1)))
+(fast-expt-iter 2 5)
+
+;; Exercise 1.17 In a similar way, one can perform integer multiplication by means of repeated addition. This algorithm takes a number of steps that is linear in b. Now suppose we include, together with addition, operations double, which doubles an integer, and halve, which divides an (even) integer by 2. Using these, design a multiplication procedure analogous to fast-expt that uses a logarithmic number of steps.
+
+(defn fast-mult [a b]
+  (let [double (fn [a] (* a 2))
+        halve (fn [a] (/ a 2))]
+    (cond
+      (zero? b) 0
+      (even? b) (fast-mult (double a) (halve b))
+      :else (+ a (fast-mult a (dec b))))))
+
+(fast-mult 11 3)
+
+;; Exercise 1.18.  Using the results of exercises 1.16 and 1.17, devise a procedure that generates an iterative process for multiplying two integers in terms of adding, doubling, and halving and uses a logarithmic number of steps.40
+
+;; After thinking of the invariant, it comes naturally.
+(defn fast-mult-iter [a b n]
+  ;; a﹒b + n is invariant
+  (let [double (fn [a] (* a 2))
+        halve (fn [a] (/ a 2))]
+    (cond
+      (zero? b) n
+      (even? b) (recur (double a) (halve b) n)
+      :else (recur a (dec b) (+ n a)))))
+(fast-mult-iter 11 3 0)
+
+;; Exercise 1.19
+
+(defn fib-iter [a b p q count]
+  (cond (= count 0) b
+        (even? count) (recur 
+                       a 
+                       b 
+                       (+ (* q q) (* p p)) 
+                       (+ (* q q) (* 2 p q))
+                       (/ count 2))
+        :else (recur (+ (* b q) (* a q) (* a p)) 
+                     (+ (* b p) (* a q))
+                     p
+                     q
+                     (dec count)))
+  )
+
+(fib-iter 1 0 0 1 10)
 
