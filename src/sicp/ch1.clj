@@ -460,4 +460,77 @@
 (miller-rabin 1105)
 (miller-rabin 1729)
 
+;; Exercise 1.29
+(defn summation [term a next b]
+  (if (> a b)
+    0
+    (+ (term a)
+       (summation term (next a) next b))))
+
+(defn integral [f a b dx]
+  (let [add-dx (fn [x] (+ x dx))]
+    (* (summation f (+ a (/ dx 2.0)) add-dx b) dx)))
+
+(defn cube [x] (* x x x))
+
+(integral cube 0 1 0.01) ; 0.24998750...
+
+
+(defn simpsons-rule-integral [f a b n]
+  (:pre [(even? n)])
+  (let [h (/ (- b a) n)
+        f* (fn [k]
+             (let [multiplier
+                   (cond (zero? k) 1
+                         (= n k) 1
+                         (even? k) 2
+                         :else 4)] (* multiplier (f (+ a (* k h))))))
+        summ (summation f* 0 inc n)]
+    (* (/ h 3) summ)))
+
+(float (simpsons-rule-integral cube 0 1 100)); 0.25
+(float (simpsons-rule-integral cube 0 1 1000)); 0.25
+
+;; Exercise 1.30
+(defn summation-iter [term a next b]
+  (let [iter (fn [a result]
+               (if (> a b) result
+                   (recur (next a) (+ (term a) result))))]
+    (iter a 0)))
+
+(summation-iter cube 1 inc 3)
+
+; Exercise 1.31
+(defn product-recur [term a next b]
+  (if (> a b)
+    1
+    (* (term a)
+       (product-recur term (next a) next b))))
+
+(product-recur cube 1 inc 3)
+
+(defn product-iter [term a next b]
+  (let [iter (fn [a result]
+               (if (> a b) result
+                   (recur (next a) (* (term a) result))))]
+    (iter a 1)))
+
+(product-iter cube 1 inc 3)
+
+(defn factorial* [n]
+  (product-iter identity 1 inc n))
+
+(factorial* 4)
+
+(defn wallis-pi [num-terms]
+  (let [even-t (fn [k] (cond 
+                             (odd? k) (+ 3 k)
+                             :else (+ 2 k)))
+        odd-t #p (fn [k] (cond
+                           (even? k) (+ 3 k)
+                           :else (+ 2 k)))]
+    (* 4 (product-iter #(/ (even-t %) (odd-t %)) 0 inc num-terms))))
+
+(float (wallis-pi 1000));; 3.1410027
+
 
