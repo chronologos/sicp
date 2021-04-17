@@ -1,5 +1,6 @@
 (ns sicp.ch1
-  (:import (java.lang Math)))
+  (:import (java.lang Math))
+  (:require [clojure.tools.trace :as trace]))
 
 ;; Exercise 1.4
 (defn a-plus-abs-b [a b]
@@ -333,18 +334,130 @@
 
 (defn fib-iter [a b p q count]
   (cond (= count 0) b
-        (even? count) (recur 
-                       a 
-                       b 
-                       (+ (* q q) (* p p)) 
+        (even? count) (recur
+                       a
+                       b
+                       (+ (* q q) (* p p))
                        (+ (* q q) (* 2 p q))
                        (/ count 2))
-        :else (recur (+ (* b q) (* a q) (* a p)) 
+        :else (recur (+ (* b q) (* a q) (* a p))
                      (+ (* b p) (* a q))
                      p
                      q
-                     (dec count)))
-  )
+                     (dec count))))
 
 (fib-iter 1 0 0 1 10)
+
+;; Ex 1.20 TODO
+;; (define (gcd a b)
+;;  (if (= b 0)
+;;    a
+;;    (gcd b (remainder a b))))
+;; gcd(206, 40)
+
+;; Exercise 1.21.  Use the smallest-divisor procedure to find the smallest divisor of each of the following numbers: 199, 1999, 19999.
+
+(defn smallest-divisor-slow [n]
+  (first (filter #(zero? (mod n %))
+                 (range 2 (inc n)))))
+
+(defn smallest-divisor [n]
+  (first (filter #(zero? (mod n %))
+                 (concat '(2) (range 3 (inc n) 2)))))
+
+(smallest-divisor 199) ;; 199
+(smallest-divisor 1999) ;; 1999
+(smallest-divisor 19999) ;; 7
+
+;; Ex 1.23
+(defn prime-slow? [n] (= n (smallest-divisor-slow n)))
+(defn prime? [n] (= n (smallest-divisor n)))
+(time (dotimes [n 10] (prime? 1000037))) ;; 555 ms
+(time (dotimes [n 10] (prime-slow? 1000037))) ;; 1073 ms
+;; 2x speedup, as expected!
+
+
+;; Ex 1.21
+(defn fermat-test [n]
+  (let [expmod (fn expmod [base exp m]
+                 (cond (zero? exp) 1
+                       (even? exp) (let [x (expmod base (/ exp 2) m)] (mod (* x x) m))
+                       :else (mod (* base (expmod base (dec exp) m)) m)))
+        try-it  (fn [a] (= (expmod a n n) a))]
+    (try-it (+ 1 (rand-int (dec n))))))
+;; Uses the mod property 
+
+(fermat-test 19999)
+
+(defn fast-prime? [n times]
+  (cond (zero? times) true
+        (fermat-test n) (fast-prime? n (- times 1))
+        :else false))
+
+;; Ex 1.22
+(defn search-for-primes [lower-bound num-primes-wanted]
+  (take num-primes-wanted
+        (filter #(fast-prime? % 8)
+                (filter odd? (range lower-bound (java.lang.Integer/MAX_VALUE))))))
+
+(defn search-for-primes-slow [lower-bound num-primes-wanted]
+  (take num-primes-wanted
+        (filter prime?
+                (filter odd? (range lower-bound (java.lang.Integer/MAX_VALUE))))))
+
+(time (doall (search-for-primes-slow 1000 3))) ;;/ (1009 1013 1019) 0.6 msecs"
+(time (doall (search-for-primes-slow 10000 3))) ;; (10007 10009 10037) 4 msecs
+(time (doall (search-for-primes-slow 100000 3))) ;; (100003 100019 100043) 30 msecs"
+(time (doall (search-for-primes-slow 1000000 3))) ;; (1000003 1000033 1000037) 224 ms
+
+;; Ex 1.24
+(trace/trace (time (doall (search-for-primes 1000 3)))) ;; (1009 1013 1019) 0.24 msecs"
+(time (doall (search-for-primes 10000 3))) ;; (10007 10009 10037) 0.50 msecs
+(time (doall (search-for-primes 100000 3))) ;; (100003 100019 100043) 0.57 msecs"
+(time (doall (search-for-primes 1000000 3))) ;; (1000003 1000033 1000037) 0.6 msecs"
+
+;; Exercise 1.25.  Alyssa P. Hacker complains that we went to a lot of extra work in writing expmod. After all, she says, since we already know how to compute exponentials, we could have simply written: 
+;; (define (expmod base exp m)
+;;     (remainder (fast-expt base exp) m))
+
+;; Theoretically (in terms of math), it would work. Computationally it fails since the numbers (without the intermediate mods) are too large and either overflow or take too long.
+
+;;  Exercise 1.26
+;;  Previously, the process was linear recursive and you halved the search space on each level (the /2). Now, every time you halve the seach space, you make 2 recursive calls at the same level. So the runtime is now O(N) instead of O(log N).s
+
+;; Exercise 1.27
+;; 47 Numbers that fool the Fermat test are called Carmichael numbers, and little is known about them other than that they are extremely rare. There are 255 Carmichael numbers below 100,000,000. The smallest few are 561, 1105, 1729, 2465, 2821, and 6601. Demonstrate that these fool the fermat test.
+(defn exhaustive-fermat-test [n]
+  (let [expmod (fn expmod [base exp m]
+                 (cond (zero? exp) 1
+                       (even? exp) (let [x (expmod base (/ exp 2) m)] (mod (* x x) m))
+                       :else (mod (* base (expmod base (dec exp) m)) m)))
+        try-it  (fn [a] (= (expmod a n n) a))]
+    (every? true? (map try-it (range 2 n)))))
+
+(exhaustive-fermat-test 561) ;; true
+(exhaustive-fermat-test 1105) ;; true
+
+;; Exercise 1.28
+;; Proof that if there is nontrivial square root of n it is not prime
+;; https://crypto.stanford.edu/pbc/notes/numbertheory/poly.html
+(defn miller-rabin [n]
+  (let [expmod (fn expmod [base exp m]
+                 (cond (zero? exp) 1
+                       (even? exp) (let [x (expmod base (/ exp 2) m)
+                                         sq (mod (* x x) m)]
+                                     (if (and (not= x 1)
+                                              (not= x (dec m))
+                                              (= sq 1)) 0
+                                         sq))
+                       :else (mod (* base (expmod base (dec exp) m)) m)))
+        try-it  (fn [a] (= (expmod a (dec n) n) 1))]
+    (try-it 3)
+    ;; (every? true? (map try-it (range 2 n)))
+    ))
+
+(miller-rabin 561)
+(miller-rabin 1105)
+(miller-rabin 1729)
+
 
