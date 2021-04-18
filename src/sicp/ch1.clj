@@ -355,6 +355,12 @@
 ;;    (gcd b (remainder a b))))
 ;; gcd(206, 40)
 
+(defn gcd [a b]
+  (if (= b 0) a
+      (gcd b (mod a b))))
+
+(gcd 10 7)
+
 ;; Exercise 1.21.  Use the smallest-divisor procedure to find the smallest divisor of each of the following numbers: 199, 1999, 19999.
 
 (defn smallest-divisor-slow [n]
@@ -500,7 +506,7 @@
 
 (summation-iter cube 1 inc 3)
 
-; Exercise 1.31
+;; Exercise 1.31
 (defn product-recur [term a next b]
   (if (> a b)
     1
@@ -523,9 +529,9 @@
 (factorial* 4)
 
 (defn wallis-pi [num-terms]
-  (let [even-t (fn [k] (cond 
-                             (odd? k) (+ 3 k)
-                             :else (+ 2 k)))
+  (let [even-t (fn [k] (cond
+                         (odd? k) (+ 3 k)
+                         :else (+ 2 k)))
         odd-t #p (fn [k] (cond
                            (even? k) (+ 3 k)
                            :else (+ 2 k)))]
@@ -534,3 +540,91 @@
 (float (wallis-pi 1000));; 3.1410027
 
 
+;; Exercise 1.32
+;; Show that sum and product (exercise 1.31) are both special cases of a still more general notion called accumulate that combines a collection of terms, using some general accumulation function:
+;; (accumulate combiner null-value term a next b)
+
+(defn accumulate-recur [combiner null-value term a next b]
+  (if (> a b) null-value
+      (combiner (term a) (accumulate combiner null-value term (next a) next b))))
+
+(defn product-acc-recur [term a next b]
+  (accumulate-recur * 1 term a next b))
+
+(product-acc-recur cube 1 inc 3)
+
+(defn accumulate-iter [combiner null-value term a next b]
+  (let [iter (fn [a result]
+               (if (> a b) result
+                   (recur (next a) (combiner (term a) result))))]
+    (iter a null-value)))
+
+(defn product-acc-iter [term a next b]
+  (accumulate-iter * 1 term a next b))
+
+(product-acc-iter cube 1 inc 3)
+
+;; Exercise 1.33
+(defn accumulate-iter-filtered [combiner pred null-value term a next b]
+  (let [iter (fn [a result]
+               (if (> a b) result
+                   (recur (next a) (if (pred a) (combiner (term a) result) result))))]
+    (iter a null-value)))
+
+;; sum of squares of primes in interval a to b
+(accumulate-iter-filtered + prime? 0 #(* % %) 4 inc 10)
+
+;; the product of all the positive integers less than n that are relatively prime to n
+(accumulate-iter-filtered * #(= (gcd % 10) 1) 1 identity 0 inc 10)
+
+;; Exercise 1.34
+(defn f [g] (g 2))
+(f f)
+;; Execution error (ClassCastException) at sicp.ch1/f (form-init2843314859918724098.clj:581).
+; class java.lang.Long cannot be cast to class clojure.lang.IFn (java.lang.Long is in module java.base of loader 'bootstrap'; clojure.lang.IFn is in unnamed module of loader 'app')
+
+;; Exercise 1.35
+;; definition of phi is phi^2 = 1 + phi, so phi = 1/phi + 1
+
+(def tolerance 1E-4)
+(defn fixed-point* [f first-guess]
+  (let [close-enough? (fn [v1 v2] (< (Math/abs ^float (- v1 v2)) tolerance))
+        try* (fn [guess steps] (let [next #p (f guess)]
+                                 (if #p (close-enough? guess next)
+                                   (do (print (str "took " steps " steps"))
+                                       next)
+                                   (recur next (inc steps)))))]
+    (try* first-guess 0)))
+
+(defn phi-fp [x] (+ 1 (/ 1 x)))
+(float (fixed-point* phi-fp 1))
+
+;; Exercise 1.36
+;; Then find a solution to x^x = 1000 by finding a fixed point of x -> log(1000)/log(x). (Use Scheme's primitive log procedure, which computes natural logarithms.) Compare the number of steps this takes with and without average damping. (Note that you cannot start fixed-point with a guess of 1, as this would cause division by log(1) = 0.)
+
+;; I modified fixed-point using the https://github.com/weavejester/hashp #p data reader to print out intermediate values.
+
+(defn undampened-x-pow-x [x] (/ (Math/log 1000) (Math/log ^float x)))
+(float (fixed-point* undampened-x-pow-x 2))
+;; took 28 steps
+;; 4.5555634
+(float (fixed-point* #(/ (+ (undampened-x-pow-x %) %) 2) 2))
+;; took 7 steps
+;; 4.5555468
+;; no oscillation at the start; nice!
+
+;; phi is 1.6180
+;; 1/phi = 0.61890
+
+;; Exercise 1.37
+(defn cont-frac [n d k]
+  (let [n-t (n k)
+        d-t (d k)
+        iter* (fn iter* [i]
+                (if (> i k) 0
+                    (/ n-t (+ d-t (iter* (inc i))))))]
+    (iter* 1)))
+
+(float (cont-frac (fn [x] 1) (fn [x] 1) 11))
+;; 11 iterations
+;; TODO: Iterative version
