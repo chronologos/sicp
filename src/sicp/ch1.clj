@@ -1,6 +1,7 @@
 (ns sicp.ch1
   (:import (java.lang Math))
-  (:require [clojure.tools.trace :as trace]))
+  (:require [clojure.tools.trace :as trace]
+            [sicp.util]))
 
 ;; Exercise 1.4
 (defn a-plus-abs-b [a b]
@@ -287,6 +288,8 @@
 
 (assert (= (pascal 5) [1 4 6 4 1]))
 
+;; TODO skipped 1.14 and 1.15
+
 ;; Exercise 1.16  Design a procedure that evolves an iterative exponentiation process that uses successive squaring and uses a logarithmic number of steps, as does fast-expt.
 
 (defn fast-expt [b n]
@@ -546,7 +549,7 @@
 
 (defn accumulate-recur [combiner null-value term a next b]
   (if (> a b) null-value
-      (combiner (term a) (accumulate combiner null-value term (next a) next b))))
+      (combiner (term a) (accumulate-recur combiner null-value term (next a) next b))))
 
 (defn product-acc-recur [term a next b]
   (accumulate-recur * 1 term a next b))
@@ -579,25 +582,25 @@
 
 ;; Exercise 1.34
 (defn f [g] (g 2))
-(f f)
+;; (f f) gives:
 ;; Execution error (ClassCastException) at sicp.ch1/f (form-init2843314859918724098.clj:581).
 ; class java.lang.Long cannot be cast to class clojure.lang.IFn (java.lang.Long is in module java.base of loader 'bootstrap'; clojure.lang.IFn is in unnamed module of loader 'app')
 
 ;; Exercise 1.35
 ;; definition of phi is phi^2 = 1 + phi, so phi = 1/phi + 1
 
-(def tolerance 1E-4)
-(defn fixed-point* [f first-guess]
+(def tolerance 1E-5)
+(defn fixed-point [f first-guess]
   (let [close-enough? (fn [v1 v2] (< (Math/abs ^float (- v1 v2)) tolerance))
-        try* (fn [guess steps] (let [next #p (f guess)]
-                                 (if #p (close-enough? guess next)
-                                   (do (print (str "took " steps " steps"))
+        try* (fn [guess steps] (let [next (f guess)]
+                                 (if (close-enough? guess next)
+                                   (do (print (str "took " steps " steps, guess=" guess ))
                                        next)
                                    (recur next (inc steps)))))]
     (try* first-guess 0)))
 
 (defn phi-fp [x] (+ 1 (/ 1 x)))
-(float (fixed-point* phi-fp 1))
+(float (fixed-point phi-fp 1))
 
 ;; Exercise 1.36
 ;; Then find a solution to x^x = 1000 by finding a fixed point of x -> log(1000)/log(x). (Use Scheme's primitive log procedure, which computes natural logarithms.) Compare the number of steps this takes with and without average damping. (Note that you cannot start fixed-point with a guess of 1, as this would cause division by log(1) = 0.)
@@ -605,10 +608,10 @@
 ;; I modified fixed-point using the https://github.com/weavejester/hashp #p data reader to print out intermediate values.
 
 (defn undampened-x-pow-x [x] (/ (Math/log 1000) (Math/log ^float x)))
-(float (fixed-point* undampened-x-pow-x 2))
+(float (fixed-point undampened-x-pow-x 2))
 ;; took 28 steps
 ;; 4.5555634
-(float (fixed-point* #(/ (+ (undampened-x-pow-x %) %) 2) 2))
+(float (fixed-point #(/ (+ (undampened-x-pow-x %) %) 2) 2))
 ;; took 7 steps
 ;; 4.5555468
 ;; no oscillation at the start; nice!
@@ -627,4 +630,75 @@
 
 (float (cont-frac (fn [x] 1) (fn [x] 1) 11))
 ;; 11 iterations
-;; TODO: Iterative version
+;; Iterative version
+
+;; TODO Skipped 1.38 and 1.39
+(defn cont-frac-iter [n d k]
+  (let [n-t (n k)
+        d-t (d k)
+        iter* (fn iter* [i res]
+                (if (zero? i) res
+                    (recur (dec i) (/ n-t (+ d-t res)))))]
+    (iter* k 0)))
+
+(float (cont-frac-iter (fn [x] 1) (fn [x] 1) 11))
+;; This seems analogous to top-down dynamic programming vs bottom up dynamic programming.
+
+;; Exercise 1.40
+(def dx 0.00001)
+(defn deriv [f]
+  (fn [x] (/ (- (f (+ x dx)) (f x)) dx)))
+((deriv (fn [x] (* x x))) 5)
+(defn newton-transform [g]
+  (fn [x] (- x (/ (g x) ((deriv g) x)))))
+(defn newtons-method [g guess]
+  (fixed-point (newton-transform g) guess))
+(newtons-method (fn [x] (* (+ x 4) (- x 4))) -10)
+(defn fixed-point-of-transform [g t guess]
+  (fixed-point (t g) guess))
+(defn cubic [a b c]
+  (fn [x] (+ (sicp.util/cube x) (* a (sicp.util/square x)) (* b x) c)))
+(newtons-method (cubic 1 2 3) 1)
+
+;; Exercise 1.41
+(defn double* [f]
+  (fn [x] (f (f x))))
+
+(((double* (double* double*)) inc) 5)
+
+;; Exercise 1.42
+(defn compose* [f g]
+  (fn [x] (f (g x))))
+
+;; clojure has `comp` which handles
+;; multi-arity arguments: ([x y z & args] (f (apply g x y z args)))))
+;; multiple-function composition:([f g & fs]
+;;    (reduce1 comp (list* f g fs))))
+
+;; Exercise 1.43
+(defn repeated [f n]
+  (if (zero? n) identity
+      (compose* f (repeated f (dec n)))))
+
+((repeated sicp.util/square 2) 5)
+
+;; Exercise 1.44
+(defn smooth [f]
+  (fn [x] (/ (+ (f x)
+                (f (+ x dx))
+                (f (- x dx)))) 3))
+
+(defn n-smooth [f n]
+  ((repeated smooth n) f))
+
+;; Exercise 1.45
+(defn dampened-root [x num-root num-repeat]
+  (fixed-point-of-transform
+   (fn [y] (sicp.util/average y (/ x (Math/pow ^double y ^double (dec num-root)))))
+   #(repeated % num-repeat)
+   2))
+
+;; (float (dampened-root 2 4 1)) don't run, does not converge.
+(float (dampened-root 2 4 2)) ;; 1.2013538948532418
+
+;; Skip Exercise 1.46
