@@ -594,7 +594,7 @@
   (let [close-enough? (fn [v1 v2] (< (Math/abs ^float (- v1 v2)) tolerance))
         try* (fn [guess steps] (let [next (f guess)]
                                  (if (close-enough? guess next)
-                                   (do (print (str "took " steps " steps, guess=" guess ))
+                                   (do (print (str "took " steps " steps, guess=" guess))
                                        next)
                                    (recur next (inc steps)))))]
     (try* first-guess 0)))
@@ -701,4 +701,18 @@
 ;; (float (dampened-root 2 4 1)) don't run, does not converge.
 (float (dampened-root 2 4 2)) ;; 1.2013538948532418
 
-;; Skip Exercise 1.46
+;; Exercise 1.46
+(defn iterative-improver [test-fn improve-fn]
+  (fn [guess] (let [improved-guess (improve-fn guess)
+                    good-enough? (test-fn guess improved-guess)]
+                (if good-enough? improved-guess
+                    (recur improved-guess)))))
+
+(defn sqrt-final [num]
+  (let [guesser (iterative-improver
+                 (fn [a b] (< (Math/abs ^float (- a b))
+                              0.001))
+                 (fn [guess] (sicp.util/average guess (/ num guess))))]
+    (guesser 1)))
+
+(float (sqrt-final 4001))
