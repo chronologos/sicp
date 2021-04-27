@@ -633,6 +633,7 @@
 ;; Iterative version
 
 ;; TODO Skipped 1.38 and 1.39
+;;
 (defn cont-frac-iter [n d k]
   (let [n-t (n k)
         d-t (d k)
