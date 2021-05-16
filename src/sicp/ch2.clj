@@ -4,6 +4,8 @@
             [sicp.ch1]
             [sicp.util]))
 
+;; Chapter 2.1
+
 ;; Representing rational numbers
 (defn make-rat-v1 [n d]
   (let [g (sicp.ch1/gcd n d)]
@@ -158,3 +160,115 @@
   (fn [f]
     (fn [x]
       (((a f) ((b f) x))))))
+
+;; Exercise 2.7
+(defn make-interval [upper lower] [upper lower])
+
+(defn upper-bound [i] (first i))
+(defn lower-bound [i] (second  i))
+
+;; Exercise 2.8 - computing the difference of two intervals
+
+(defn sub-interval [a b]
+  (let [new-upper-bound (- (upper-bound a) (lower-bound b))
+        new-lower-bound (- (lower-bound a) (upper-bound b))]
+    (make-interval new-upper-bound new-lower-bound)))
+
+(sub-interval (make-interval 20 10) (make-interval 2 1))
+
+(defn mul-interval [a b]
+  (let [p1 (* (lower-bound a) (lower-bound b))
+        p2 (* (lower-bound a) (upper-bound b))
+        p3 (* (upper-bound a) (lower-bound b))
+        p4 (* (upper-bound a) (upper-bound b))]
+    (make-interval (min p1 p2 p3 p4) (max p1 p2 p3 p4))))
+
+;; Exercise 2.9.  The width of an interval is half of the difference between its upper and lower bounds. The width is a measure of the uncertainty of the number specified by the interval. For some arithmetic operations the width of the result of combining two intervals is a function only of the widths of the argument intervals, whereas for others the width of the combination is not a function of the widths of the argument intervals. Show that the width of the sum (or difference) of two intervals is a function only of the widths of the intervals being added (or subtracted). Give examples to show that this is not true for multiplication or division.
+
+;; in the cae of addition, instead of representing an interval by the upper and lower bound, we could represent it by the lower bound and the width. Then we would have
+
+(defn add-interval [[lb-a width-a] [lb-b width-b]]
+  [(+ lb-a lb-b) (+ width-a width-b)])
+
+(add-interval [1 2] [1 3])
+
+;; The same is true for subtraction but not for multiplication and division. To see the latter, look at the formula given by Gerald and Sussman for mul-interval again: terms p2, p3 and p4 involve upper bounds, which means that in the language of the alternative representation ([lb width]) given above, widths are being multiplied with lower bounds and subsequently used to determine the widths. The same argument applies for division.
+
+;; Exercise 2.10
+(defn div-interval [a b]
+  (let [lb-b (lower-bound b)
+        ub-b (upper-bound b)]
+    (if (< (* ub-b lb-b) 0)
+      (throw (new AssertionError "cannot divide by span over zero"))
+      (mul-interval a
+                    (make-interval (/ 1.0 (upper-bound b))
+                                   (/ 1.0 (lower-bound b)))))))
+
+;; Exercise 2.11.  In passing, Ben also cryptically comments: ``By testing the signs of the endpoints of the intervals, it is possible to break mul-interval into nine cases, only one of which requires more than two multiplications.'' Rewrite this procedure using Ben's suggestion.
+;; TODO SKIP, see https://eli.thegreenplace.net/2007/07/27/sicp-section-214/
+
+;; Exercise 2.12
+(defn make-center-percent [c tol]
+  (let [abs (* c (/ tol 100))]
+    (make-interval (- c abs) (+ c abs))))
+
+(make-center-percent 10 100)
+
+;; Exercise 2.13
+;; For proof, see SICP notability notebook.
+
+;; Exercise 2.14
+(div-interval (make-center-percent 5 1) (make-center-percent 5 1))
+(div-interval (make-center-percent 5 1) (make-center-percent 10 1))
+;; Exercise 2.15 & Exercise 2.16
+;; From wikipedia:
+;; > Informally, a field is a set, along with two operations defined on that set: an addition operation written as a + b, and a multiplication operation written as a ⋅ b, both of which behave similarly as they behave for rational numbers and real numbers, including the existence of an additive inverse −a for all elements a, and of a multiplicative inverse b−1 for every nonzero element b. This allows one to also consider the so-called inverse operations of subtraction, a − b, and division, a / b, by defining:
+;; In intervals there is no multiplicative inverse!
+
+;; Chapter 2.2
+;; Exercise 2.17.  Define a procedure last-pair that returns the list that contains only the last element of a given (nonempty) list.
+;; It would be trivial using a vector in Clojure, but let's try what the book wants.
+(defn last-elem [l]
+  (if (empty? (rest l)) (first l)
+      (last-elem (rest l))))
+
+(last-elem '(1 2 3))
+
+;; Exercise 2.18.  Define a procedure reverse that takes a list as argument and returns a list of the same elements in reverse order:
+(reverse '(1 2 3)) ; okay not this :)
+
+(defn reverse-list
+  ([l res] (if (empty? l) res
+               (reverse-list (rest l) (cons (first l) res))))
+  ([l] (reverse-list l '())))
+
+(reverse-list '(1 2 3))
+
+;; Exercise 2.19
+(def us-coins (list 50 25 10 5 1))
+(def uk-coins (list 100 50 20 10 5 2 1 0.5))
+
+(defn first-denomination [d] (first d))
+(defn except-first-denomination [d] (rest d))
+
+(defn no-more? [d] (empty? d))
+
+(defn cc [amount coin-values]
+  (cond (zero? amount) 1
+        (or (< amount 0) (no-more? coin-values)) 0
+        :else (+ (cc amount
+                     (except-first-denomination coin-values))
+                 (cc (- amount (first-denomination coin-values))
+                     coin-values))))
+(cc 100 us-coins)
+
+;; Exercise 2.20
+;; In Clojure, we use (defn f [a & args]) to have variadic arguments
+;; I was having a little fun with sequence destructuring here; it would probably be nicer to do some of the destructuring as code.
+(defn same-parity [[x & [_ & rest-xs :as xs] :as all]]
+  (if (or (empty? all) (empty? xs)) '()
+      (cons x (same-parity rest-xs))))
+
+(same-parity (range 1 11))
+
+(assert (= (same-parity (range 1 11)) '(1 3 5 7 9)))
