@@ -272,3 +272,37 @@
 (same-parity (range 1 11))
 
 (assert (= (same-parity (range 1 11)) '(1 3 5 7 9)))
+
+;; Exercise 2.21
+
+(defn square-list-1 [items]
+  (if (empty? items) nil
+      (cons (sicp.util/square (first items)) (square-list-1 (rest items)))))
+(square-list-1 [1 2 3])
+
+(defn square-list-2 [items]
+  (map sicp.util/square items))
+(square-list-2 '(1 2 3))
+
+;; Exercise 2.22
+;; In the first implementation, list elements are taken out of `things` from the front of the list and added onto the front of the result, causing the result to be reversed.
+
+;; In the second implementation, the returned list isn't flat. In fact, a straightforward translation into clojure doesn't work because the params of cons are [x seq] but we are trying to pass a seq as the first argument. A revised version that works:
+(defn square-list [items]
+  (let [iter (fn [things answer]
+               (if (empty? things) answer
+                   (recur (rest things)
+                          (concat answer (list (sicp.util/square (first things)))))))]
+    (iter items '())))
+
+(square-list '(1 2 3 4))
+
+;; Exercise 2.23
+
+(defn for-each [f s] 
+  (reduce (fn [_ val] (f val)) nil s)
+  )
+(for-each #(println %) '(1 2 3))
+
+;; alternatively, since clojure uses lazy seqs, we can force evaluation using doall.
+(doall (map #(println %) '(1 2 3)))
