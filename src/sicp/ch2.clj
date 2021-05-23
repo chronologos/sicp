@@ -299,10 +299,64 @@
 
 ;; Exercise 2.23
 
-(defn for-each [f s] 
-  (reduce (fn [_ val] (f val)) nil s)
-  )
+(defn for-each [f s]
+  (reduce (fn [_ val] (f val)) nil s))
 (for-each #(println %) '(1 2 3))
 
 ;; alternatively, since clojure uses lazy seqs, we can force evaluation using doall.
 (doall (map #(println %) '(1 2 3)))
+
+;; 2.6
+(defn count-leaves [x]
+  (cond (not (seq? x)) 1
+        (empty? x) 0
+        :else (+ (count-leaves (first x))
+                 (count-leaves (rest x)))))
+
+(count-leaves '(1 (2 (3 4))))
+
+;; Exercise 2.24 in notability
+;; Exercise 2.25
+;; So Clojure has sensibly renamed car and cdr for modern sensibilities. 
+;; first = car, rest = cdr
+(defn cadr [x] (first (rest x)))
+((comp cadr cadr rest) '(1 3 (5 7) 9))
+((comp first first) '((7)))
+((comp cadr cadr cadr cadr cadr cadr) '(1 (2 (3 (4 (5 (6 7)))))))
+
+;; Exercise 2.26
+(def list-x (list 1 2 3))
+(def list-y (list 4 5 6))
+(concat list-x list-y) ;; i think append is concat in clojure?, it gives (1 2 3 4 5 6)
+(cons list-x list-y) ;; gives ((1 2 3) 4 5 6)
+(list list-x list-y) ;; gives ((1 2 3) (4 5 6))
+
+;; Exercise 2.27.  Modify your reverse procedure of exercise 2.18 to produce a deep-reverse procedure that takes a list as argument and returns as its value the list with its elements reversed and with all sublists deep-reversed as well. For example,
+
+;; Similar to count-leaves
+(defn deep-reverse [x]
+  (cond (not (seq? x)) x ;; if not a seq (e.g. nil or atom) just return the element on its own.
+        :else (reverse (map deep-reverse x)))) ;; recurse
+(deep-reverse '((1 2) (3 4) ()))
+
+;; Exercise 2.28
+;; Exercise 2.28.  Write a procedure fringe that takes as argument a tree (represented as a list) and returns a list whose elements are all the leaves of the tree arranged in left-to-right order. 
+(def fringe-testinput (list (list 1 2) (list 3 4)))
+
+;; I think this is the idiomatic way :) ; super easy due to tree-seq.
+;; Picked it up when I was doing 4Clojure exercises.
+(defn fringe [l]
+  (filter #(not (seq? %)) (tree-seq seq? identity l)))
+(fringe (list fringe-testinput fringe-testinput))
+
+(defn fringe-no-cheat [x]
+  (cond
+    (not (seq? x)) (list x) ;; if it is a leaf, return wrapped in a list for `concat`
+    (empty? x) nil ;; if it is empty or nil, return nil
+    :else (concat (fringe-no-cheat (first x))
+                  (fringe-no-cheat (rest x)))))
+
+(fringe-no-cheat fringe-testinput)
+(fringe-no-cheat (list fringe-testinput fringe-testinput))
+
+
