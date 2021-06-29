@@ -359,4 +359,50 @@
 (fringe-no-cheat fringe-testinput)
 (fringe-no-cheat (list fringe-testinput fringe-testinput))
 
+;; TODO I did 2.29 to 2.32 but didn't save them properly...
 
+;; Exercise 2.33.  Fill in the missing expressions to complete the following definitions of some basic list-manipulation operations as accumulations:
+
+(defn accumulate [op initial sequence]
+  (let [next (fn next [op initial sequence]
+               (if (empty? sequence)
+                 initial
+                 (op (first sequence)
+                     (next op initial (rest sequence)))))]
+    (next op initial sequence)))
+
+(accumulate + 0 (list 1 2 3 4 5))
+(accumulate * 1 (list 1 2 3 4 5))
+(accumulate cons nil (list 1 2 3 4 5))
+
+(defn map_ [p sequence]
+  (accumulate (fn [x y] (cons (p x) y)) nil sequence))
+
+(map_ #(* % 2) '(1 2 3))
+
+(defn append_ [seq1 seq2]
+  (accumulate cons seq2 seq1))
+
+(append_ '(1 2 3) '(4 5 6))
+
+(defn length_ [sequence]
+  (accumulate (fn [x y] (if (zero? y) 1 (inc y))) 0 sequence))
+(length_ '(1 2 3))
+
+;; Exercise 2.34
+(defn horner-eval [x coefficient-sequence]
+  (accumulate (fn [this-coeff higher-terms] (+ this-coeff (* x higher-terms)))
+              0
+              coefficient-sequence))
+
+(horner-eval 2 (list 1 3 0 5 0 1))
+
+;; Exercise 2.35.  Redefine count-leaves from section 2.2.2 as an accumulation:
+(defn count-leaves_ [t]
+  (accumulate
+   (fn [this-form num-leaves]
+     (if (not (seq? this-form)) (inc num-leaves)
+         (+ num-leaves (count-leaves this-form))))
+   0 t))
+
+(count-leaves_ '(1 (2 3 (3 4))))
