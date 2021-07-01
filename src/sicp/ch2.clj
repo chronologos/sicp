@@ -406,3 +406,48 @@
    0 t))
 
 (count-leaves_ '(1 (2 3 (3 4))))
+
+;; Exercise 2.36
+(defn accumulate-n [op init seqs]
+  (if (empty? (first seqs))
+    nil
+    (cons (accumulate op init (map first seqs))
+          (accumulate-n op init (map rest seqs)))))
+
+(accumulate-n + 0 (list '(1 2 3) '(4 5 6) '(7 8 9) '(10 11 12)))
+
+;; Exercise 2.37s
+(def matrix-a (list '(1 2 3 4) '(4 5 6 6) '(6 7 8 9)))
+(defn dot-product [v w]
+  (accumulate + 0 (map * v w)))
+
+(dot-product '(1 2 3) '(4 5 6))
+
+(defn matrix-*-vector [m v] (map #(dot-product v %) m))
+(matrix-*-vector matrix-a '(1 1 2 1))
+
+(defn transpose [m] (accumulate-n cons nil m))
+(transpose matrix-a)
+
+(defn matrix-*-matrix [m n]
+  (let [cols (transpose n)]
+    (map #(matrix-*-vector cols %) m)))
+
+(matrix-*-matrix (list '(1 2 3) '(4 5 6)) (list '(7 8) '(9 10) '(11 12)))
+
+;; Exercise 2.38
+(defn foldr [op init seq]
+  (if (empty? seq) init
+      (op (first seq)
+          (foldr op init (rest seq)))))
+
+(defn foldl [op init seq]
+  (let [iter (fn [result l]
+               (if (empty? l) result
+                   (recur (op result (first l)) (rest l))))]
+    (iter init seq)))
+
+(foldr / 1 '(1 2 3)) ;; 3/2
+(foldl / 1 '(1 2 3)) ;; 1/6
+(foldr list nil (list 1 2 3)) ;; (1 (2 (3 nil)))
+(foldl list nil (list 1 2 3)) ;; (((nil 1) 2) 3)
