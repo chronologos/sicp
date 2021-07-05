@@ -482,3 +482,50 @@
        (map make-pair-sum)))
 
 (prime-sum-pairs 6)
+
+;; Exercise 2.41
+(defn unique-triples [n]
+  (mapcat
+   (fn [i] (mapcat
+            (fn [j] (map (fn [k] (list i j k))
+                         (range 1 j)))
+            (range 1 i)))
+   (range 1 (inc n))))
+(unique-triples 4)
+
+(defn three-sum [n s]
+  (->> (unique-triples n)
+       (filter #(= s (apply + %)))))
+
+(three-sum 10 10)
+
+;; row position of each crab, in column order.
+(def empty-board [])
+(defn safe? [k-col-pos positions]
+  ;; maybe off by one?
+  (let [k-row-pos (nth positions k-col-pos)
+        exclude-last (subvec positions 0 k-col-pos)
+        ;; compute diagonal 1
+        tlbr (mapv - (range) exclude-last)
+        ;; compute diagonal 2
+        bltr (mapv + (range) exclude-last)]
+    (and (not (some #{k-row-pos} exclude-last))
+         (not (some #{(- k-col-pos k-row-pos)} tlbr))
+         (not (some #{(+ k-col-pos k-row-pos)} bltr)))))
+(defn adjoin-position [new-row _ rest-of-queens] (conj rest-of-queens new-row))
+(safe? 3 [0 0 0 4])
+
+;; Excercise 2.42
+(defn queens [n]
+  (letfn [(queens-cols [k]
+            (if (zero? k)
+              (list empty-board)
+              (filter (fn [positions] (safe? (dec k) positions))
+                      (mapcat
+                       (fn [rest-of-queens]
+                         (map
+                          #(adjoin-position % k rest-of-queens)
+                          (range n)))
+                       (queens-cols (dec k))))))]
+    (queens-cols n)))
+(count (queens 8))
