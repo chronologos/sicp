@@ -451,3 +451,34 @@
 (foldl / 1 '(1 2 3)) ;; 1/6
 (foldr list nil (list 1 2 3)) ;; (1 (2 (3 nil)))
 (foldl list nil (list 1 2 3)) ;; (((nil 1) 2) 3)
+
+;; Exercise 2.39
+(defn reverse-r [sequence]
+  (foldr (fn [x y] (concat y (list x))) nil sequence))
+(reverse-r '(1 2 3))
+(defn reverse-l [sequence]
+  (foldl (fn [x y] (cons y x)) nil sequence))
+(reverse-l '(1 2 3))
+
+;; Exercise 2.40
+(defn unique-pairs [n]
+  (mapcat
+   (fn [i] (map
+            (fn [j] (list j i))
+            (range 1 i)))
+   (range 1 (inc n))))
+(unique-pairs 5)
+
+
+(defn prime-sum? [pair]
+  (sicp.ch1/prime? (+ (first pair) (second pair))))
+
+(defn make-pair-sum [pair]
+  (list (first pair) (second pair) (+ (first pair) (second pair))))
+
+(defn prime-sum-pairs [n]
+  (->> (unique-pairs n)
+       (filter prime-sum?)
+       (map make-pair-sum)))
+
+(prime-sum-pairs 6)
