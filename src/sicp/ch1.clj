@@ -21,9 +21,9 @@
   (cond predicate then-clause
         :else else-clause))
 
-(new-if (= 2 3) (print "yes") (print "no"))
-(if (= 2 3) (print "yes") (print "no"))
-(cond (= 2 3) (print "yes") :else (print "no"))
+;;(new-if (= 2 3) (print "yes") (print "no"))
+;;(if (= 2 3) (print "yes") (print "no"))
+;;(cond (= 2 3) (print "yes") :else (print "no"))
 
 ;; Exercise 1.7.  The good-enough? test used in computing square roots will not be very effective for finding the square roots of very small numbers. Also, in real computers, arithmetic operations are almost always performed with limited precision. This makes our test inadequate for very large numbers. Explain these statements, with examples showing how the test fails for small and large numbers. 
 (defn sqrt-iter [guess x]
@@ -253,8 +253,8 @@
                 (recur (+ a b) a (dec count))))]
     (fib-iter 1 0 n)))
 
-(time (fibonacci 30))
-(time (fibonacci* 30)) ;; fastest of all, 0.147 msecs (loop doesn't change runtime)
+;;(time (fibonacci 30))
+;;(time (fibonacci* 30)) ;; fastest of all, 0.147 msecs (loop doesn't change runtime)
 
 ;; Exercise 1.11.  A function f is defined by the rule that f(n) = n if n<3 and f(n) = f(n - 1) + 2f(n - 2) + 3f(n - 3) if n> 3. Write a procedure that computes f by means of a recursive process. Write a procedure that computes f by means of an iterative process.
 (defn ex111-r [n]
@@ -381,8 +381,8 @@
 ;; Ex 1.23
 (defn prime-slow? [n] (= n (smallest-divisor-slow n)))
 (defn prime? [n] (= n (smallest-divisor n)))
-(time (dotimes [n 10] (prime? 1000037))) ;; 555 ms
-(time (dotimes [n 10] (prime-slow? 1000037))) ;; 1073 ms
+;;(time (dotimes [n 10] (prime? 1000037))) ;; 555 ms
+;;(time (dotimes [n 10] (prime-slow? 1000037))) ;; 1073 ms
 ;; 2x speedup, as expected!
 
 
@@ -414,16 +414,16 @@
         (filter prime?
                 (filter odd? (range lower-bound (java.lang.Integer/MAX_VALUE))))))
 
-(time (doall (search-for-primes-slow 1000 3))) ;;/ (1009 1013 1019) 0.6 msecs"
-(time (doall (search-for-primes-slow 10000 3))) ;; (10007 10009 10037) 4 msecs
-(time (doall (search-for-primes-slow 100000 3))) ;; (100003 100019 100043) 30 msecs"
-(time (doall (search-for-primes-slow 1000000 3))) ;; (1000003 1000033 1000037) 224 ms
+;;(time (doall (search-for-primes-slow 1000 3))) ;;/ (1009 1013 1019) 0.6 msecs"
+;;(time (doall (search-for-primes-slow 10000 3))) ;; (10007 10009 10037) 4 msecs
+;;(time (doall (search-for-primes-slow 100000 3))) ;; (100003 100019 100043) 30 msecs"
+;;(time (doall (search-for-primes-slow 1000000 3))) ;; (1000003 1000033 1000037) 224 ms
 
 ;; Ex 1.24
-(trace/trace (time (doall (search-for-primes 1000 3)))) ;; (1009 1013 1019) 0.24 msecs"
-(time (doall (search-for-primes 10000 3))) ;; (10007 10009 10037) 0.50 msecs
-(time (doall (search-for-primes 100000 3))) ;; (100003 100019 100043) 0.57 msecs"
-(time (doall (search-for-primes 1000000 3))) ;; (1000003 1000033 1000037) 0.6 msecs"
+;;(trace/trace (time (doall (search-for-primes 1000 3)))) ;; (1009 1013 1019) 0.24 msecs"
+;;(time (doall (search-for-primes 10000 3))) ;; (10007 10009 10037) 0.50 msecs
+;;(time (doall (search-for-primes 100000 3))) ;; (100003 100019 100043) 0.57 msecs"
+;;(time (doall (search-for-primes 1000000 3))) ;; (1000003 1000033 1000037) 0.6 msecs"
 
 ;; Exercise 1.25.  Alyssa P. Hacker complains that we went to a lot of extra work in writing expmod. After all, she says, since we already know how to compute exponentials, we could have simply written: 
 ;; (define (expmod base exp m)
@@ -540,7 +540,7 @@
                            :else (+ 2 k)))]
     (* 4 (product-iter #(/ (even-t %) (odd-t %)) 0 inc num-terms))))
 
-(float (wallis-pi 1000));; 3.1410027
+;;(float (wallis-pi 1000));; 3.1410027
 
 
 ;; Exercise 1.32
@@ -600,7 +600,7 @@
     (try* first-guess 0)))
 
 (defn phi-fp [x] (+ 1 (/ 1 x)))
-(float (fixed-point phi-fp 1))
+;; (float (fixed-point phi-fp 1))
 
 ;; Exercise 1.36
 ;; Then find a solution to x^x = 1000 by finding a fixed point of x -> log(1000)/log(x). (Use Scheme's primitive log procedure, which computes natural logarithms.) Compare the number of steps this takes with and without average damping. (Note that you cannot start fixed-point with a guess of 1, as this would cause division by log(1) = 0.)
@@ -608,10 +608,12 @@
 ;; I modified fixed-point using the https://github.com/weavejester/hashp #p data reader to print out intermediate values.
 
 (defn undampened-x-pow-x [x] (/ (Math/log 1000) (Math/log ^float x)))
-(float (fixed-point undampened-x-pow-x 2))
+
+;; (float (fixed-point undampened-x-pow-x 2))
 ;; took 28 steps
 ;; 4.5555634
-(float (fixed-point #(/ (+ (undampened-x-pow-x %) %) 2) 2))
+
+;;(float (fixed-point #(/ (+ (undampened-x-pow-x %) %) 2) 2))
 ;; took 7 steps
 ;; 4.5555468
 ;; no oscillation at the start; nice!
@@ -659,7 +661,7 @@
   (fixed-point (t g) guess))
 (defn cubic [a b c]
   (fn [x] (+ (sicp.util/cube x) (* a (sicp.util/square x)) (* b x) c)))
-(newtons-method (cubic 1 2 3) 1)
+;;(newtons-method (cubic 1 2 3) 1)
 
 ;; Exercise 1.41
 (defn double* [f]
@@ -700,7 +702,7 @@
    2))
 
 ;; (float (dampened-root 2 4 1)) don't run, does not converge.
-(float (dampened-root 2 4 2)) ;; 1.2013538948532418
+;; (float (dampened-root 2 4 2)) ;; 1.2013538948532418
 
 ;; Exercise 1.46
 (defn iterative-improver [test-fn improve-fn]
@@ -716,4 +718,4 @@
                  (fn [guess] (sicp.util/average guess (/ num guess))))]
     (guesser 1)))
 
-(float (sqrt-final 4001))
+;; (float (sqrt-final 4001))

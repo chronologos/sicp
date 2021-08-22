@@ -387,7 +387,7 @@
 
 (defn length_ [sequence]
   (accumulate (fn [x y] (if (zero? y) 1 (inc y))) 0 sequence))
-(length_ '(1 2 3))
+;;(length_ '(1 2 3))
 
 ;; Exercise 2.34
 (defn horner-eval [x coefficient-sequence]
@@ -395,7 +395,7 @@
               0
               coefficient-sequence))
 
-(horner-eval 2 (list 1 3 0 5 0 1))
+;;(horner-eval 2 (list 1 3 0 5 0 1))
 
 ;; Exercise 2.35.  Redefine count-leaves from section 2.2.2 as an accumulation:
 (defn count-leaves_ [t]
@@ -405,7 +405,7 @@
          (+ num-leaves (count-leaves this-form))))
    0 t))
 
-(count-leaves_ '(1 (2 3 (3 4))))
+;;(count-leaves_ '(1 (2 3 (3 4))))
 
 ;; Exercise 2.36
 (defn accumulate-n [op init seqs]
@@ -414,7 +414,7 @@
     (cons (accumulate op init (map first seqs))
           (accumulate-n op init (map rest seqs)))))
 
-(accumulate-n + 0 (list '(1 2 3) '(4 5 6) '(7 8 9) '(10 11 12)))
+;;(accumulate-n + 0 (list '(1 2 3) '(4 5 6) '(7 8 9) '(10 11 12)))
 
 ;; Exercise 2.37s
 (def matrix-a (list '(1 2 3 4) '(4 5 6 6) '(6 7 8 9)))
@@ -424,16 +424,16 @@
 (dot-product '(1 2 3) '(4 5 6))
 
 (defn matrix-*-vector [m v] (map #(dot-product v %) m))
-(matrix-*-vector matrix-a '(1 1 2 1))
+;;(matrix-*-vector matrix-a '(1 1 2 1))
 
 (defn transpose [m] (accumulate-n cons nil m))
-(transpose matrix-a)
+;;(transpose matrix-a)
 
 (defn matrix-*-matrix [m n]
   (let [cols (transpose n)]
     (map #(matrix-*-vector cols %) m)))
 
-(matrix-*-matrix (list '(1 2 3) '(4 5 6)) (list '(7 8) '(9 10) '(11 12)))
+;;(matrix-*-matrix (list '(1 2 3) '(4 5 6)) (list '(7 8) '(9 10) '(11 12)))
 
 ;; Exercise 2.38
 (defn foldr [op init seq]
@@ -449,16 +449,17 @@
 
 (foldr / 1 '(1 2 3)) ;; 3/2
 (foldl / 1 '(1 2 3)) ;; 1/6
-(foldr list nil (list 1 2 3)) ;; (1 (2 (3 nil)))
-(foldl list nil (list 1 2 3)) ;; (((nil 1) 2) 3)
+;;(foldr list nil (list 1 2 3)) ;; (1 (2 (3 nil)))
+;;(foldl list nil (list 1 2 3)) ;; (((nil 1) 2) 3)
 
 ;; Exercise 2.39
 (defn reverse-r [sequence]
   (foldr (fn [x y] (concat y (list x))) nil sequence))
-(reverse-r '(1 2 3))
+;;(reverse-r '(1 2 3))
+
 (defn reverse-l [sequence]
   (foldl (fn [x y] (cons y x)) nil sequence))
-(reverse-l '(1 2 3))
+;;(reverse-l '(1 2 3))
 
 ;; Exercise 2.40
 (defn unique-pairs [n]
@@ -467,7 +468,7 @@
             (fn [j] (list j i))
             (range 1 i)))
    (range 1 (inc n))))
-(unique-pairs 5)
+;;(unique-pairs 5)
 
 
 (defn prime-sum? [pair]
@@ -481,7 +482,7 @@
        (filter prime-sum?)
        (map make-pair-sum)))
 
-(prime-sum-pairs 6)
+;;(prime-sum-pairs 6)
 
 ;; Exercise 2.41
 (defn unique-triples [n]
@@ -497,7 +498,7 @@
   (->> (unique-triples n)
        (filter #(= s (apply + %)))))
 
-(three-sum 10 10)
+;;(three-sum 10 10)
 
 ;; row position of each crab, in column order.
 (def empty-board [])
@@ -513,7 +514,7 @@
          (not (some #{(- k-col-pos k-row-pos)} tlbr))
          (not (some #{(+ k-col-pos k-row-pos)} bltr)))))
 (defn adjoin-position [new-row _ rest-of-queens] (conj rest-of-queens new-row))
-(safe? 3 [0 0 0 4])
+;;(safe? 3 [0 0 0 4])
 
 ;; Excercise 2.42
 (defn queens [n]
@@ -528,4 +529,4 @@
                           (range n)))
                        (queens-cols (dec k))))))]
     (queens-cols n)))
-(count (queens 8))
+;;(count (queens 8))
