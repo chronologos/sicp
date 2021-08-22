@@ -2,6 +2,12 @@
 
 Working through the book 'Structure and Interpretation of Computer Programs' in Clojure.
 
+
+## Graphics programming
+I use Quil for the graphics programming sections of the book. It mixes Processing (the graphics programming language) and Clojure. ch2quil.clj gives an example of how to run it (it is a bit finicky).
+
+API Reference: http://quil.info/api
+
 ## License
 
 Copyright © 2021 github.com/chronologos
