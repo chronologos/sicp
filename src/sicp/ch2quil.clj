@@ -73,9 +73,9 @@
   (fn [frame]
     (let [m (frame-coord-map frame)
           new-origin (m origin)]
-      (painter (make-frame #p new-origin
-                           #p (sub-vect (m corner1) new-origin)
-                           #p (sub-vect (m corner2) new-origin))))))
+      (painter (make-frame new-origin
+                           (sub-vect (m corner1) new-origin)
+                           (sub-vect (m corner2) new-origin))))))
 
 (defn flip-vert [painter]
   (transform-painter painter (make-vect 0 1)
@@ -155,8 +155,8 @@
 (defn draw []
   (let [main-frame (make-frame (make-vect 300 300) (make-vect 100 0) (make-vect 0 -100))
         main-frame-high (make-frame (make-vect 100 100) (make-vect 100 0) (make-vect 0 -100))
-        main-frame-low (make-frame (make-vect 500 500) (make-vect 100 0) (make-vect 0 -100))]
-    (q/resize-sketch 600 600)
+        main-frame-low (make-frame (make-vect 0 800) (make-vect 700 0) (make-vect 0 -700))]
+    (q/resize-sketch 800 800)
     (q/stroke 255 0 0)
     (q/stroke-weight 2)
     (frame-outline main-frame)
@@ -173,7 +173,7 @@
     (q/stroke 0 122 122)
     (base-image main-frame-high)
     (q/stroke 122 122 0)
-    ((below base-image base-image) main-frame-low)))
+    ((square-limit base-image 5) main-frame-low)))
 
 
 (q/defsketch example                  ;; Define a new sketch named example
