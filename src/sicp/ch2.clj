@@ -630,3 +630,61 @@
 (deriv '(* x y (+ x 3)) 'x)
 (deriv '(* x (** x 3)) 'x)
 
+;; Ex 2.58b, adapted from https://eli.thegreenplace.net/2007/08/30/sicp-sections-231-232
+;;
+;; <sum>    -> <term> + <sum>
+;;           | <term>
+;;
+;; <term>   -> <factor> * <term>
+;;           | <factor>
+;;
+;; <factor> -> symbol 
+;;           | number
+;;           | (<sum>)
+;;
+
+(def token-stream (atom '()))
+(defn initialize-token-stream [s] (swap! token-stream (fn [x] s)))
+(def stream-stack (atom '()))
+(defn push-stream [stream]
+  (swap! stream-stack conj @token-stream)
+  (initialize-token-stream stream))
+(defn pop-stream [] (let [top (swap! stream-stack pop)]
+                      (initialize-token-stream top)))
+(defn next-token [] (first @token-stream))
+(defn scan [] (let [r (next-token)]
+                (swap! token-stream rest)
+                r))
+
+(declare parse-factor)
+
+(defn parse-term []
+  (let [lfact (parse-factor)]
+    (if (= (next-token) '*)
+      (do (scan)
+          (let [rterm (parse-term)]
+            (list '* lfact rterm)))
+      lfact)))
+
+(defn parse-sum []
+  (let [lterm (parse-term)]
+    (if (= (next-token) '+)
+      (do (scan)
+          (let [rsum (parse-sum)]
+            (list '+ lterm rsum)))
+
+      lterm)))
+
+(defn parse-factor []
+  (let [tok (next-token)]
+    (cond (or (number? tok) (symbol? tok)) (do (scan) tok)
+          (list? tok) (do (push-stream tok) (let [sum (parse-sum)]
+                                              (pop-stream)
+                                              (scan)
+                                              sum))
+          :else (throw (new Exception)))))
+
+
+;; run with:
+;; (initialize-token-stream '(x + 3 * (x + y + 2)))
+;; (parse-sum)
