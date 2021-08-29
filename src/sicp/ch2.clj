@@ -530,3 +530,103 @@
                        (queens-cols (dec k))))))]
     (queens-cols n)))
 ;;(count (queens 8))
+
+;; Exercises as part of <A Picture Language> are in ch2quil.clj
+
+(defn memq [item x]
+  (cond (empty? x) false
+        (= item (first x)) x
+        :else (memq item (rest x))))
+
+(memq 'apple '(x (apple sauce) y apple pear))
+
+;; Exercise 2.53.  What would the interpreter print in response to evaluating each of the following expressions?
+
+;; (list 'a 'b 'c)
+;; (a b c)
+
+;; (list (list 'george))
+;; ((george))
+
+;; (rest '((x1 x2) (y1 y2)))
+;; ((y1 y2))
+
+;; (first (rest '((x1 x2) (y1 y2))))
+;; (y1 y2)
+
+;; (memq 'red '((red shoes) (blue socks)))
+;; false
+
+;; (memq 'red '(red shoes blue socks))
+;; (red shoes blue socks)
+
+;; Exercise 2.54.  Two lists are said to be equal? if they contain equal elements arranged in the same order. For example,
+;; (= '(a b c) '(a b c))
+
+(defn equal? [a b]
+  (cond
+    (and (symbol? a) (symbol? b) (= a b)) true
+    (and (empty? a) (empty? b)) true
+    (and (list? a)
+         (list? b)
+         (equal? (first a) (first b))
+         (equal? (rest a) (rest b))) true
+    :else false))
+
+(equal? '(a b c) '(a b c))
+(first ''abracadabra)
+
+(defn variable? [x] (symbol? x))
+(defn same-variable? [x y] (and (variable? x) (variable? y) (= x y)))
+(defn sum? [x] (and (list? x) (= (first x) '+)))
+(defn make-sum [x y]
+  (cond (and (number? x) (number? y)) (+ x y)
+        (and (number? x) (zero? x)) y
+        (and (number? y) (zero? y)) x
+        :else (list '+ x y)))
+(defn addend [x] (second x))
+(defn augend [x]
+  (if (= (count x) 3) (nth x 2)
+      (conj (rest (rest x)) '+)))
+(defn product? [x] (and (list? x) (= (first x) '*)))
+(defn make-product
+  ([x y]
+   (cond (and (number? x) (number? y)) (* x y)
+         (and (number? x) (zero? x)) 0
+         (and (number? y) (zero? y)) 0
+         (= x 1) y
+         (= y 1) x
+         :else (list '* x y)))
+  ([x y & args] #p (apply make-product (make-product x y) args)))
+(defn multiplier [x] (second x))
+(defn multiplicand [x]
+  (if (= (count x) 3) (nth x 2)
+      (conj (rest (rest x)) '*)))
+(defn exponentiation? [x] (and (list? x) (= (first x) '**)))
+(defn base [x] (second x))
+(defn exponent [x] (nth x 2))
+(defn make-exponentiation [x y]
+  (cond (and (number? y) (zero? y)) 1
+        (and (number? y) (= y 1)) x
+        :else (list '** x y)))
+
+(defn deriv [exp var]
+  (cond (number? exp) 0
+        (variable? exp) (if (same-variable? exp var) 1 0)
+        (sum? exp) (make-sum
+                    #p (deriv (addend exp) var)
+                    #p (deriv (augend exp) var))
+        (product? exp)
+        (make-sum (make-product (multiplier exp) (deriv (multiplicand exp) var))
+                  (make-product (multiplicand exp) (deriv (multiplier exp) var)))
+        (exponentiation? exp)
+        (make-product #p (exponent exp)
+                      #p (make-exponentiation (base exp) (dec (exponent exp)))
+                      #p (deriv #p (base exp) var))
+        :else (throw (new Exception))))
+
+(deriv '(+ x 3) 'x)
+(deriv '(* x y) 'x)
+(deriv '(* x y (+ x 3)) 'x)
+(deriv '(* x (** x 3)) 'x)
+
