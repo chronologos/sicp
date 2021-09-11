@@ -694,31 +694,34 @@
 ;; ---------------------------------
 
 (defn element-of-set? [x set]
-  (cond (empty? set) false
-        (= x (first set)) true
-        :else (element-of-set? x (rest set))))
+  (cond
+    (empty? set) false
+    (= x (first set)) true
+    :else (element-of-set? x (rest set))))
 
 (defn adjoin-set [x set]
   (if (element-of-set? x set) set
       (cons x set)))
 
 (defn intersection-set [set1 set2]
-  (cond (or (empty? set1) (empty? set2))
-        '()
-        (element-of-set? (first set1) set2)
-        (cons (first set1) (intersection-set (rest set1) set2))
-        :else
-        (intersection-set (rest set1) set2)))
+  (cond
+    (or (empty? set1) (empty? set2))
+    '()
+    (element-of-set? (first set1) set2)
+    (cons (first set1) (intersection-set (rest set1) set2))
+    :else
+    (intersection-set (rest set1) set2)))
 
 ;; Exercise 2.59.  
 ;; Implement the union-set operation for the unordered-list representation of sets.
 (defn union-set [set1 set2]
-  (cond (empty? set1) set2
-        (empty? set2) set1
-        (not (element-of-set? (first set1) set2))
-        (cons (first set1) (union-set (rest set1) set2))
-        :else
-        (union-set (rest set1) set2)))
+  (cond
+    (empty? set1) set2
+    (empty? set2) set1
+    (not (element-of-set? (first set1) set2))
+    (cons (first set1) (union-set (rest set1) set2))
+    :else
+    (union-set (rest set1) set2)))
 
 ;; Exercise 2.60.  
 ;; We specified that a set would be represented as a list with no duplicates. Now suppose we allow duplicates. For instance, the set {1,2,3} could be represented as the list (2 3 2 1 3 2 2). Design procedures element-of-set?, adjoin-set, union-set, and intersection-set that operate on this representation. How does the efficiency of each compare with the corresponding procedure for the non-duplicate representation? Are there applications for which you would use this representation in preference to the non-duplicate one?
@@ -726,31 +729,56 @@
 ;; Verbal answer. The implementation would be similar to above, but without checking for element-of-set? in union. You would prefer the representation with duplicates if you do  more unions and adjoins than intersections or element-of-set?s. 
 
 (defn ordered-element-of-set? [x set]
-  (cond (empty? set) false
-        (= x (first set)) true
-        (< x (first set)) false
-        :else (ordered-element-of-set? x (rest set))))
+  (cond
+    (empty? set) false
+    (= x (first set)) true
+    (< x (first set)) false
+    :else (ordered-element-of-set? x (rest set))))
 
 (defn ordered-intersection-set [set1 set2]
-  (cond (or (empty? set1) (empty? set2))
-        '()
-        (= (first set1) (first set2)) (cons (first set1) (ordered-intersection-set (rest set1) (rest set2)))
-        (< (first set1) (first set2)) (ordered-intersection-set (rest set1) set2)
-        :else
-        (ordered-intersection-set (rest set2) set1)))
+  (cond
+    (or (empty? set1) (empty? set2))
+    '()
+    (= (first set1) (first set2)) (cons (first set1) (ordered-intersection-set (rest set1) (rest set2)))
+    (< (first set1) (first set2)) (ordered-intersection-set (rest set1) set2)
+    :else
+    (ordered-intersection-set (rest set2) set1)))
 
 ;; ex 2.61
 (defn ordered-adjoin-set [x set]
-  (cond (empty? set) '(x)
-        (= (first set) x) set
-        (> (first set) x) (cons x set)
-        :else (cons (first set) (ordered-adjoin-set x (rest set)))))
+  (cond
+    (empty? set) '(x)
+    (= (first set) x) set
+    (> (first set) x) (cons x set)
+    :else (cons (first set) (ordered-adjoin-set x (rest set)))))
 
 ;; ex 2.62
 (defn ordered-union-set [set1 set2]
-  (cond (empty? set1) set2
-        (empty? set2) set1
-        (= (first set1) (first set2)) (cons (first set1) (ordered-union-set (rest set1) (rest set2)))
-        (< (first set1) (first set2)) (cons (first set1) (ordered-union-set (rest set1) set2))
-        :else
-        (cons (first set2) (ordered-union-set (rest set2) set1))))
+  (cond
+    (empty? set1) set2
+    (empty? set2) set1
+    (= (first set1) (first set2)) (cons (first set1) (ordered-union-set (rest set1) (rest set2)))
+    (< (first set1) (first set2)) (cons (first set1) (ordered-union-set (rest set1) set2))
+    :else
+    (cons (first set2) (ordered-union-set (rest set2) set1))))
+
+;; tree representation as vector
+(defn entry [tree] (nth tree 0))
+(defn left-branch [tree] (nth tree 1))
+(defn right-branch [tree] (nth tree 2))
+(defn make-tree [entry left right]
+  [entry left right])
+
+;; set representation as BST
+(defn tree-element-of-set [x tree-set]
+  (cond
+    (empty? tree-set) false
+    (= x (entry tree-set)) true
+    (< x (entry tree-set)) (tree-element-of-set x (left-branch tree-set))
+    :else (tree-element-of-set x (right-branch tree-set))))
+;; (tree-element-of-set 5 [3 [1 [] []] [4 [2 [] []] [6 [] []]]])
+
+;; ex 2.63. same result, same runtime growth.
+;; ex 2.64
+;; partial-tree constructs a balanced binary tree from an ordered list recursively. It computes the necessary sizes of the left and right subtrees in order for the tree to be balanced. Recursively, it forms the left subtree, and uses the remaining elements to form the root and the right subtree.
+;; order of growth: O(n), each element is taken from `elts` and placed into the tree exactly once.
