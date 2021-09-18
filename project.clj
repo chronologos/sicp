@@ -7,4 +7,4 @@
                  [org.clojure/tools.trace "0.7.11"]
                  [quil "3.1.0"]]
   :main  sicp.ch2quil
-  :repl-options {:init-ns sicp.core})
+  :repl-options {:init-ns sicp.util})

@@ -782,3 +782,114 @@
 ;; ex 2.64
 ;; partial-tree constructs a balanced binary tree from an ordered list recursively. It computes the necessary sizes of the left and right subtrees in order for the tree to be balanced. Recursively, it forms the left subtree, and uses the remaining elements to form the root and the right subtree.
 ;; order of growth: O(n), each element is taken from `elts` and placed into the tree exactly once.
+
+;; Huffman
+(declare h-symbols h-weight)
+(defn h-make-leaf [symbol weight] (list 'leaf symbol weight))
+(defn h-leaf? [obj] (= (first obj) 'leaf))
+(defn h-symbol-leaf [x] (first (rest x)))
+(defn h-weight-leaf [x] (first (rest (rest x))))
+(defn h-make-code-tree [left right]
+  (list left right
+        (append_ (h-symbols left) (h-symbols right))
+        (+ (h-weight left) (h-weight right))))
+(defn h-left-branch [tree] (first tree))
+(defn h-right-branch [tree] (first (rest tree)))
+(defn h-symbols [tree]
+  (if (h-leaf? tree)
+    (list (h-symbol-leaf tree))
+    (nth tree 2)))
+(defn h-weight [tree]
+  (if (h-leaf? tree) (h-weight-leaf tree)
+      (nth tree 3)))
+(defn h-choose-branch [bit branch]
+  (cond (= bit 0) (h-left-branch branch)
+        (= bit 1) (h-right-branch branch)
+        :else (throw (new AssertionError bit))))
+
+(defn h-decode [bits tree]
+  (letfn [(decode-1 [bits curr-branch]
+            (if (empty? bits) '()
+                (let [next-branch (h-choose-branch (first bits) curr-branch)]
+                  (if (h-leaf? next-branch)
+                    (cons (h-symbol-leaf next-branch) (decode-1 (rest bits) tree))
+                    (recur (rest bits) next-branch)))))]
+    (decode-1 bits tree)))
+
+(def sample-tree
+  (h-make-code-tree (h-make-leaf 'A 4)
+                    (h-make-code-tree
+                     (h-make-leaf 'B 2)
+                     (h-make-code-tree (h-make-leaf 'D 1)
+                                       (h-make-leaf 'C 1)))))
+
+(def sample-message '(0 1 1 0 0 1 0 1 0 1 1 1 0))
+
+;; Ex 2.67
+(h-decode sample-message sample-tree)
+;; (A D A B B C A)
+
+;; Ex 2.68
+(defn h-encode-symbol [symbol tree res]
+  (if (h-leaf? tree)
+    ;; i did not use ordered property of set here since I'm lazy to implement comparison for this data structure...
+    (if (element-of-set? symbol (h-symbols tree)) (do (print symbol res) res)
+        (throw (new AssertionError (str "not in tree: " symbol + " res" res))))
+    (if (element-of-set? symbol (h-symbols (h-left-branch tree)))
+      (h-encode-symbol symbol (h-left-branch tree) (concat res '(0)))
+      (h-encode-symbol symbol (h-right-branch tree) (concat res '(1))))))
+
+(defn h-encode [msg tree]
+  (if (empty? msg) '()
+      (concat (h-encode-symbol (first msg) tree '())
+              (h-encode (rest msg) tree))))
+
+(h-encode '(A D A B B C A) sample-tree)
+
+(h-decode (h-encode '(A D A B B C A) sample-tree) sample-tree)
+
+
+(defn h-adjoin-set [x set]
+  (cond (empty? set) (list x)
+        (< (h-weight x) (h-weight (first set))) (cons x set)
+        :else (cons (first set)
+                    (h-adjoin-set x (rest set)))))
+
+(defn h-make-leaf-set [pairs]
+  (if (empty? pairs)
+    '()
+    (let [pair (first pairs)]
+      (h-adjoin-set (h-make-leaf (first pair)    ; symbol
+                                 (first (rest pair)))  ; frequency
+                    (h-make-leaf-set (rest pairs))))))
+;; (h-make-leaf-set (list '(A 2) '(B 3) '(C 1)))
+;; ((leaf C 1) (leaf A 2) (leaf B 3))
+
+;; Exercise 2.69.  The following procedure takes as its argument a list of symbol-frequency pairs (where no symbol appears in more than one pair) and generates a Huffman encoding tree according to the Huffman algorithm.
+(defn h-successive-merge [trees]
+  (cond (empty? trees) '()
+        (= (count trees) 1) (first trees)
+        :else
+        (let [tree1 (first trees)
+              tree2 (second trees)
+              rest-of-trees (rest (rest trees))]
+          (recur (h-adjoin-set (h-make-code-tree tree1 tree2) rest-of-trees)))))
+
+(defn h-generate-huffman-tree [pairs]
+  (h-successive-merge (h-make-leaf-set pairs)))
+
+(h-generate-huffman-tree '((a 8) (b 3) (c 1) (d 1) (e 1) (f 1) (g 1) (h 1)))
+;; (h-generate-huffman-tree '((A 4) (B 2) (C 1) (D 1)))
+
+;; Exercise 2.70.
+(def rock-huffman-tree
+  (h-generate-huffman-tree '((A 2) (NA 16) (BOOM 1) (SHA 3) (GET 2) (YIP 9) (JOB 2) (WAH 1))))
+
+(print (h-encode '(GET A JOB SHA NA NA NA NA NA NA NA NA GET A JOB SHA NA NA NA NA NA NA NA NA WAH YIP YIP YIP YIP YIP YIP YIP YIP YIP SHA BOOM) rock-huffman-tree))
+(count (h-encode '(GET A JOB SHA NA NA NA NA NA NA NA NA GET A JOB SHA NA NA NA NA NA NA NA NA WAH YIP YIP YIP YIP YIP YIP YIP YIP YIP SHA BOOM) rock-huffman-tree))
+;; 84 bits, saves (3bits*36chars - 84) = 24 bits compared to a fixed-length encoding.
+
+;; given that n is the number of symbols:
+;; ex 2.71: 1 bit for least frequent and n-1 bits for the most frequent.
+
+;; ex 2.72. for worst-case symbol, need to traverse n levels of a "linear" tree. At each level, search in a set of size O(n) in the worst case. Search in an ordered set is also O(n). Unless we use a tree for O(log(n)). Then it would be a total runtime of O(nlog(n)) for a worst-case symbol.
