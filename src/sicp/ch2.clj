@@ -893,3 +893,71 @@
 ;; ex 2.71: 1 bit for least frequent and n-1 bits for the most frequent.
 
 ;; ex 2.72. for worst-case symbol, need to traverse n levels of a "linear" tree. At each level, search in a set of size O(n) in the worst case. Search in an ordered set is also O(n). Unless we use a tree for O(log(n)). Then it would be a total runtime of O(nlog(n)) for a worst-case symbol.
+
+;; 2.73 data-directed programming using clojure's multimethods to dispatch.
+;; b.  Write the procedures for derivatives of sums and products, and the auxiliary code required to install them in the table used by the program above.
+(declare deriv2)
+(defn operator [exp] (first exp))
+(defn operands [exp] (rest exp))
+
+(defmulti get-from-table (fn [op exp]
+                           (print "op and exp:" [op exp])
+                           (cond (number? exp) [op ::number]
+                                 (variable? exp) [op ::var]
+                                 :else [op (operator exp)])))
+
+(defmethod get-from-table ['deriv ::number] [_ _]
+  (fn [_ _] 0))
+
+(defmethod get-from-table ['deriv ::var] [_ _]
+  (fn [exp var]
+    (if (same-variable? exp var) 1 0)))
+
+(defmethod get-from-table ['deriv '+] [_ _]
+  (fn [exp var]
+    (make-sum
+     (deriv2 (addend exp) var)
+     (deriv2 (augend exp) var))))
+
+(defmethod get-from-table ['deriv '*] [_ _]
+  (fn [exp var]
+    (make-sum (make-product (multiplier exp) (deriv2 (multiplicand exp) var))
+              (make-product (multiplicand exp) (deriv2 (multiplier exp) var)))))
+
+;; c.  Choose any additional differentiation rule that you like, such as the one for exponents (exercise 2.56), and install it in this data-directed system.
+(defmethod get-from-table ['deriv '**] [_ _]
+  (fn [exp var]
+    (make-product (exponent exp)
+                  (make-exponentiation (base exp) (dec (exponent exp)))
+                  (deriv2 (base exp) var))))
+
+(defn deriv2 [exp var]
+  ((get-from-table #p 'deriv #p exp) exp var))
+
+;; another method using predicates to dispatch
+;; https://stackoverflow.com/questions/7622269/scheme-clojure-multimethods-with-predicates-in-the-methods
+
+(def pred-list (ref []))
+
+(defn dispatch-function [op exp]
+  (loop [i 0]
+    (cond
+      (>= i (count @pred-list))     (throw (Error. "No matching function!"))
+      ((@pred-list i) exp) [op i]
+      :else                         (recur (inc i)))))
+
+(defmulti handler dispatch-function)
+
+(defn assign-operation [function op & preds]
+  (dosync
+   (let [i (count @pred-list)]
+     (alter pred-list conj
+            (fn [exp] (every? identity (map #(%1 %2) preds (repeat exp)))))
+     (defmethod handler [op i] [exp var] function))))
+
+(assign-operation (fn [_ _] 0) 'deriv number?)
+(assign-operation (fn [exp var] (if (same-variable? exp var) 1 0)) 'deriv variable?)
+
+
+;; a.  Explain what was done above. Why can't we assimilate the predicates number? and same-variable? into the data-directed dispatch?
+;; those don't have a fixed symbol to look up in the table.
